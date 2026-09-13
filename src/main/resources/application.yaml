@@ -1,3 +1,12 @@
+server:
+  port: 8080
+
 spring:
-  application:
-    name: ms-andesstay-bff
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # URL del emisor (Issuer) usando tu tenantId exacto de Azure
+          issuer-uri: https://login.microsoftonline.com/524de923-14d5-4e21-bbbf-525ca2e1ced7/v2.0
+          # Llaves públicas de Azure AD para verificar la firma del token
+          jwk-set-uri: https://login.microsoftonline.com/524de923-14d5-4e21-bbbf-525ca2e1ced7/discovery/v2.0/keys
