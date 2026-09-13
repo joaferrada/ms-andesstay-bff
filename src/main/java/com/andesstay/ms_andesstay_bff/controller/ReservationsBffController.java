@@ -1,4 +1,4 @@
-package com.andesstay.ms_andesstay_bff;
+package com.andesstay.ms_andesstay_bff.controller;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
