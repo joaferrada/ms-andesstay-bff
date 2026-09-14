@@ -23,15 +23,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints públicos si los hubiera (ej. documentación o salud)
                         .requestMatchers("/actuator/health").permitAll()
-                        // Cualquier otra petición exige que el usuario esté autenticado con un JWT válido
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(jwtAuthConverter)
+                        )
                 );
 
         return http.build();
