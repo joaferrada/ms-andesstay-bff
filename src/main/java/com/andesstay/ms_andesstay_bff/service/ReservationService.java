@@ -64,9 +64,6 @@ public class ReservationService {
     public Map<String, Object> crearReservaEnMicroservicio(
             Map<String, Object> reservaDto) {
 
-        System.out.println("🔥 ENVIANDO POST AL MICROSERVICIO 8081");
-        System.out.println("🔥 TOKEN OBTENIDO: " + (obtenerToken() != null));
-
         return restClient.post()
                 .uri("http://localhost:8081/api/reservations")
                 .headers(headers ->

@@ -23,9 +23,6 @@ public class ReservationsBffController {
     @GetMapping
     public List<Map<String, Object>> listarReservas(Authentication authentication) {
 
-        System.out.println("🔥 ENTRO AL CONTROLLER DE RESERVAS");
-        System.out.println("🔥 AUTH: " + authentication);
-
         return reservationService.obtenerReservasDesdeMicroservicio();
     }
 
@@ -40,10 +37,6 @@ public class ReservationsBffController {
     public Map<String, Object> crearReserva(
             @RequestBody Map<String, Object> reservaDto,
             Authentication authentication) {
-
-        System.out.println("🔥 ENTRO AL POST DE RESERVAS");
-        System.out.println("🔥 AUTH: " + authentication);
-        System.out.println("🔥 BODY: " + reservaDto);
 
         return reservationService.crearReservaEnMicroservicio(reservaDto);
     }
