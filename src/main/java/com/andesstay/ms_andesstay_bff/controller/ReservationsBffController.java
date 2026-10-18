@@ -1,10 +1,12 @@
 package com.andesstay.ms_andesstay_bff.controller;
 
 import com.andesstay.ms_andesstay_bff.service.ReservationService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
 import java.util.Map;
@@ -21,9 +23,12 @@ public class ReservationsBffController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> listarReservas(Authentication authentication) {
+    public List<Map<String, Object>> listarReservas(@RequestParam(required = false) String status,
+                                                    Authentication authentication) {
 
-        return reservationService.obtenerReservasDesdeMicroservicio();
+        return status == null || status.isBlank()
+                ? reservationService.obtenerReservasDesdeMicroservicio()
+                : reservationService.obtenerReservasPorEstado(status);
     }
 
     @GetMapping("/{id}")
@@ -53,5 +58,18 @@ public class ReservationsBffController {
     public ResponseEntity<Void> eliminarReserva(@PathVariable Long id) {
         reservationService.eliminarReservaEnMicroservicio(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // EP3: cambio de estado. Propaga 400/404/409 del microservicio con su mensaje JSON.
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('Admin') or hasRole('Operador_Dominio')")
+    public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @RequestBody Map<String, Object> statusDto) {
+        try {
+            return ResponseEntity.ok(reservationService.cambiarEstadoEnMicroservicio(id, statusDto));
+        } catch (HttpClientErrorException ex) {
+            return ResponseEntity.status(ex.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(ex.getResponseBodyAsString());
+        }
     }
 }

@@ -46,6 +46,36 @@ public class ReservationService {
     }
 
     /**
+     * GET /api/reservations?status=...
+     */
+    public List<Map<String, Object>> obtenerReservasPorEstado(String status) {
+
+        return restClient.get()
+                .uri("http://localhost:8081/api/reservations?status={status}", status)
+                .headers(headers ->
+                        headers.setBearerAuth(obtenerToken()))
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+    }
+
+    /**
+     * PUT /api/reservations/{id}/status
+     * Los errores 4xx del microservicio (404, 409, 400) se propagan como HttpClientErrorException.
+     */
+    public Map<String, Object> cambiarEstadoEnMicroservicio(
+            Long id,
+            Map<String, Object> statusDto) {
+
+        return restClient.put()
+                .uri("http://localhost:8081/api/reservations/" + id + "/status")
+                .headers(headers ->
+                        headers.setBearerAuth(obtenerToken()))
+                .body(statusDto)
+                .retrieve()
+                .body(new ParameterizedTypeReference<Map<String, Object>>() {});
+    }
+
+    /**
      * GET /api/reservations/{id}
      */
     public Map<String, Object> obtenerReservaPorId(Long id) {
