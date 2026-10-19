@@ -16,14 +16,14 @@ Frontend (MSAL) --> API Gateway (CORS + JWT authorizer) --> BFF :8080 (roles) --
 .\mvnw.cmd spring-boot:run
 ```
 
-Las URLs internas estan en `application.yaml` (`andesstay.services.*.url`) y se cambian con variables de entorno; en Docker se usan los nombres de contenedor:
+Las URLs internas estan en `application.yaml` (`andesstay.services.*.url`) y se cambian con variables de entorno; en Docker se usan los nombres de servicio de infra/compose.yml:
 
 | Variable | Default | Ejemplo en Docker |
 |---|---|---|
-| `RESERVATIONS_URL` | `http://localhost:8081` | `http://ms-andesstay-reservations:8081` |
-| `CATALOG_URL` | `http://localhost:8085` | `http://ms-andesstay-catalog:8085` |
-| `AUDIT_URL` | `http://localhost:8086` | `http://ms-andesstay-audit:8086` |
-| `REPORT_URL` | `http://localhost:8087` | `http://ms-andesstay-report:8087` |
+| `RESERVATIONS_URL` | `http://localhost:8081` | `http://reservations:8081` |
+| `CATALOG_URL` | `http://localhost:8085` | `http://catalog:8085` |
+| `AUDIT_URL` | `http://localhost:8086` | `http://audit:8086` |
+| `REPORT_URL` | `http://localhost:8087` | `http://report:8087` |
 
 ## CORS y seguridad en API Gateway
 
@@ -75,6 +75,18 @@ App roles definidos en el App registration de Entra ID (claim `roles`). Se aplic
 "Solo las suyas" lo aplica `ms-andesstay-reservations` (una reserva ajena responde 404, comparando `huespedEmail` con el principal del token).
 
 El BFF reenvia body y respuesta como `Map<String, Object>` sin transformarlos, asi que los campos del huesped (`huespedNombre`, `huespedEmail`, `creadoPor`) pasan tal cual. Quien decide de donde salen los datos del huesped (token para Cliente, body para Admin/Operador) es el microservicio. Los 4xx y 5xx del microservicio (400, 403, 404, 409, 503) se devuelven tal cual con su JSON, y si el microservicio no responde el BFF devuelve **503** (`exception/MicroserviceErrorHandler`).
+
+## Docker
+
+`Dockerfile` multi-stage: build con `maven:3.9-eclipse-temurin-17` y runtime `eclipse-temurin:17-jre` con usuario no root, puerto **8080** y `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75`. Se levanta junto al resto del backend con el compose unico de `infra` (ver su README):
+
+```powershell
+cd ..\infra
+docker compose up -d --build bff
+docker compose logs -f bff
+```
+
+En el compose apunta a `http://reservations:8081`, `http://catalog:8085`, `http://audit:8086` y `http://report:8087`; arranca cuando reservations esta healthy. Healthcheck: `GET http://localhost:8080/actuator/health`.
 
 ## Tests
 
