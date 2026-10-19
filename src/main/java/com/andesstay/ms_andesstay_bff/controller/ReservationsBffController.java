@@ -23,6 +23,7 @@ public class ReservationsBffController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('Admin','Operador_Dominio','Cliente_Dominio','Auditor')")
     public List<Map<String, Object>> listarReservas(@RequestParam(required = false) String status,
                                                     Authentication authentication) {
 
@@ -32,6 +33,7 @@ public class ReservationsBffController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('Admin','Operador_Dominio','Cliente_Dominio','Auditor')")
     public ResponseEntity<Map<String, Object>> obtenerReservaPorId(@PathVariable Long id) {
         // El microservicio responde 404 si no existe o si es de otro cliente
         try {
@@ -43,7 +45,7 @@ public class ReservationsBffController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('Cliente_Dominio') or hasRole('Admin')")
+    @PreAuthorize("hasAnyRole('Admin','Operador_Dominio','Cliente_Dominio')")
     public Map<String, Object> crearReserva(
             @RequestBody Map<String, Object> reservaDto,
             Authentication authentication) {
@@ -52,7 +54,7 @@ public class ReservationsBffController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('Cliente_Dominio') or hasRole('Admin')")
+    @PreAuthorize("hasAnyRole('Admin','Operador_Dominio','Cliente_Dominio')")
     public ResponseEntity<Map<String, Object>> actualizarReserva(@PathVariable Long id, @RequestBody Map<String, Object> reservaDto, Authentication authentication) {
         try {
             Map<String, Object> actualizada = reservationService.actualizarReservaEnMicroservicio(id, reservaDto);
@@ -63,7 +65,7 @@ public class ReservationsBffController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('Admin') or hasRole('Operador_Dominio')")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<Void> eliminarReserva(@PathVariable Long id) {
         reservationService.eliminarReservaEnMicroservicio(id);
         return ResponseEntity.noContent().build();
@@ -71,7 +73,7 @@ public class ReservationsBffController {
 
     // EP3: cambio de estado. Propaga 400/404/409 del microservicio con su mensaje JSON.
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('Admin') or hasRole('Operador_Dominio')")
+    @PreAuthorize("hasAnyRole('Admin','Operador_Dominio')")
     public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @RequestBody Map<String, Object> statusDto) {
         try {
             return ResponseEntity.ok(reservationService.cambiarEstadoEnMicroservicio(id, statusDto));
