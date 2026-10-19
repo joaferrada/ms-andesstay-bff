@@ -1,17 +1,29 @@
 # ms-andesstay-bff
 
-Backend for Frontend de AndesStay (puerto **8080**). Spring Boot 4.1.1 · Java 17 · Resource Server JWT (Microsoft Entra ID). Recibe las llamadas del frontend a traves de **AWS API Gateway**, autoriza por rol y reenvia el JWT a `ms-andesstay-reservations` (`:8081`).
+Backend for Frontend de AndesStay (puerto **8080**). Spring Boot 4.1.1 · Java 17 · Resource Server JWT (Microsoft Entra ID). Recibe las llamadas del frontend a traves de **AWS API Gateway**, autoriza por rol y reenvia el JWT al microservicio que corresponde.
 
 ```
-Frontend (MSAL) --> API Gateway (CORS + JWT authorizer) --> BFF :8080 (roles) --> reservations :8081 (roles + dueño)
+Frontend (MSAL) --> API Gateway (CORS + JWT authorizer) --> BFF :8080 (roles) --> /api/reservations/** -> reservations :8081 (roles + dueño)
+                                                                              --> /api/catalog/**      -> catalog :8085
+                                                                              --> /api/audit/**        -> audit :8086 (solo GET)
+                                                                              --> /api/report/**       -> report :8087
 ```
 
 ## Ejecutar
 
 ```powershell
-# Requiere ms-andesstay-reservations corriendo en :8081
+# Requiere los microservicios corriendo (por defecto en localhost)
 .\mvnw.cmd spring-boot:run
 ```
+
+Las URLs internas estan en `application.yaml` (`andesstay.services.*.url`) y se cambian con variables de entorno; en Docker se usan los nombres de contenedor:
+
+| Variable | Default | Ejemplo en Docker |
+|---|---|---|
+| `RESERVATIONS_URL` | `http://localhost:8081` | `http://ms-andesstay-reservations:8081` |
+| `CATALOG_URL` | `http://localhost:8085` | `http://ms-andesstay-catalog:8085` |
+| `AUDIT_URL` | `http://localhost:8086` | `http://ms-andesstay-audit:8086` |
+| `REPORT_URL` | `http://localhost:8087` | `http://ms-andesstay-report:8087` |
 
 ## CORS y seguridad en API Gateway
 
@@ -52,9 +64,17 @@ App roles definidos en el App registration de Entra ID (claim `roles`). Se aplic
 | `PUT /api/reservations/{id}/status` | si | si | no | no |
 | `DELETE /api/reservations/{id}` | si | no | no | no |
 
+| `GET /api/catalog/units` (y `?tipo=&hostal=&soloDisponibles=`), `GET /api/catalog/units/{id}` | si | si | si | si |
+| `POST /api/catalog/units`, `PUT` / `DELETE /api/catalog/units/{id}` | si | no | no | no |
+| `POST /api/catalog/units/{id}/reserve` y `/release` | si | si | no | no |
+| `GET /api/audit/events` (filtros y paginacion), `GET /api/audit/reservations/{id}/timeline` | si | no | no | si |
+| `GET /api/report/kpis?range=`, `GET /api/report/top-units?range=&limit=` | si | no | no | no |
+
+`POST /api/audit/events` **no se expone** en el BFF (405): es interno, lo llama reservations al crear, cambiar de estado o eliminar.
+
 "Solo las suyas" lo aplica `ms-andesstay-reservations` (una reserva ajena responde 404, comparando `huespedEmail` con el principal del token).
 
-El BFF reenvia body y respuesta como `Map<String, Object>` sin transformarlos, asi que los campos del huesped (`huespedNombre`, `huespedEmail`, `creadoPor`) pasan tal cual. Quien decide de donde salen los datos del huesped (token para Cliente, body para Admin/Operador) es el microservicio. Los 4xx del microservicio (400, 403, 404, 409) se devuelven tal cual con su JSON (`exception/MicroserviceErrorHandler`).
+El BFF reenvia body y respuesta como `Map<String, Object>` sin transformarlos, asi que los campos del huesped (`huespedNombre`, `huespedEmail`, `creadoPor`) pasan tal cual. Quien decide de donde salen los datos del huesped (token para Cliente, body para Admin/Operador) es el microservicio. Los 4xx y 5xx del microservicio (400, 403, 404, 409, 503) se devuelven tal cual con su JSON, y si el microservicio no responde el BFF devuelve **503** (`exception/MicroserviceErrorHandler`).
 
 ## Tests
 
@@ -63,3 +83,5 @@ El BFF reenvia body y respuesta como `Map<String, Object>` sin transformarlos, a
 ```
 
 - `ReservationsBffControllerSecurityTest`: cada endpoint con `jwt()` y `ROLE_*` de los 4 roles + sin rol (200/204 o 403), sin token (401) y propagacion de un 403 del microservicio.
+- `CatalogAuditReportBffSecurityTest`: lo mismo para catalog, audit y report; POST de audit no expuesto (405), 409 de catalog y 503 de report propagados, microservicio caido -> 503.
+- `ServiceUrlsTest`: cada service usa `andesstay.services.*.url` y reenvia solo los query params informados.
