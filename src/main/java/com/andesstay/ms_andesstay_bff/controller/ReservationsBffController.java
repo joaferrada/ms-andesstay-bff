@@ -33,8 +33,13 @@ public class ReservationsBffController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> obtenerReservaPorId(@PathVariable Long id) {
-        Map<String, Object> reserva = reservationService.obtenerReservaPorId(id);
-        return reserva != null ? ResponseEntity.ok(reserva) : ResponseEntity.notFound().build();
+        // El microservicio responde 404 si no existe o si es de otro cliente
+        try {
+            Map<String, Object> reserva = reservationService.obtenerReservaPorId(id);
+            return reserva != null ? ResponseEntity.ok(reserva) : ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException.NotFound ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PostMapping
@@ -49,8 +54,12 @@ public class ReservationsBffController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('Cliente_Dominio') or hasRole('Admin')")
     public ResponseEntity<Map<String, Object>> actualizarReserva(@PathVariable Long id, @RequestBody Map<String, Object> reservaDto, Authentication authentication) {
-        Map<String, Object> actualizada = reservationService.actualizarReservaEnMicroservicio(id, reservaDto);
-        return actualizada != null ? ResponseEntity.ok(actualizada) : ResponseEntity.notFound().build();
+        try {
+            Map<String, Object> actualizada = reservationService.actualizarReservaEnMicroservicio(id, reservaDto);
+            return actualizada != null ? ResponseEntity.ok(actualizada) : ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException.NotFound ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
