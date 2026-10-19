@@ -1,5 +1,6 @@
 package com.andesstay.ms_andesstay_bff.controller;
 
+import com.andesstay.ms_andesstay_bff.exception.MicroserviceErrorHandler;
 import com.andesstay.ms_andesstay_bff.security.JwtAuthConverter;
 import com.andesstay.ms_andesstay_bff.security.SecurityConfig;
 import com.andesstay.ms_andesstay_bff.service.ReservationService;
@@ -10,13 +11,17 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.client.HttpClientErrorException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -24,13 +29,14 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Autorizacion por rol de cada endpoint del BFF (claim "roles" de Entra ID -> ROLE_*).
  */
 @WebMvcTest(ReservationsBffController.class)
-@Import({SecurityConfig.class, JwtAuthConverter.class})
+@Import({SecurityConfig.class, JwtAuthConverter.class, MicroserviceErrorHandler.class})
 class ReservationsBffControllerSecurityTest {
 
     private static final String BODY = "{\"alojamientoNombre\":\"Cabana Lago\"}";
@@ -95,6 +101,18 @@ class ReservationsBffControllerSecurityTest {
     @CsvSource({"Admin,204", "Operador_Dominio,403", "Cliente_Dominio,403", "Auditor,403", "Sin_Rol,403"})
     void eliminar(String rol, int esperado) throws Exception {
         assertStatus(delete("/api/reservations/1"), rol, esperado);
+    }
+
+    @Test
+    void errorDelMicroservicioSePropagaConSuCodigo() throws Exception {
+        when(reservationService.crearReservaEnMicroservicio(any())).thenThrow(HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY,
+                "{\"status\":403}".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
+
+        mockMvc.perform(post("/api/reservations").contentType(MediaType.APPLICATION_JSON).content(BODY)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Cliente_Dominio"))))
+                .andExpect(status().isForbidden())
+                .andExpect(content().json("{\"status\":403}"));
     }
 
     @Test
