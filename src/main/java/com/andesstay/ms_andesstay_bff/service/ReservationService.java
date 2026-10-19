@@ -1,5 +1,6 @@
 package com.andesstay.ms_andesstay_bff.service;
 
+import com.andesstay.ms_andesstay_bff.config.ServicesProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,10 +15,13 @@ import java.util.Map;
 public class ReservationService {
 
     private final RestClient restClient;
+    private final String baseUrl;
 
     public ReservationService(
-            @Qualifier("internalRestClient") RestClient restClient) {
+            @Qualifier("internalRestClient") RestClient restClient,
+            ServicesProperties services) {
         this.restClient = restClient;
+        this.baseUrl = services.reservations().url();
     }
 
     /**
@@ -38,7 +42,7 @@ public class ReservationService {
     public List<Map<String, Object>> obtenerReservasDesdeMicroservicio() {
 
         return restClient.get()
-                .uri("http://localhost:8081/api/reservations")
+                .uri(baseUrl + "/api/reservations")
                 .headers(headers ->
                         headers.setBearerAuth(obtenerToken()))
                 .retrieve()
@@ -51,7 +55,7 @@ public class ReservationService {
     public List<Map<String, Object>> obtenerReservasPorEstado(String status) {
 
         return restClient.get()
-                .uri("http://localhost:8081/api/reservations?status={status}", status)
+                .uri(baseUrl + "/api/reservations?status={status}", status)
                 .headers(headers ->
                         headers.setBearerAuth(obtenerToken()))
                 .retrieve()
@@ -67,7 +71,7 @@ public class ReservationService {
             Map<String, Object> statusDto) {
 
         return restClient.put()
-                .uri("http://localhost:8081/api/reservations/" + id + "/status")
+                .uri(baseUrl + "/api/reservations/" + id + "/status")
                 .headers(headers ->
                         headers.setBearerAuth(obtenerToken()))
                 .body(statusDto)
@@ -81,7 +85,7 @@ public class ReservationService {
     public Map<String, Object> obtenerReservaPorId(Long id) {
 
         return restClient.get()
-                .uri("http://localhost:8081/api/reservations/" + id)
+                .uri(baseUrl + "/api/reservations/" + id)
                 .headers(headers ->
                         headers.setBearerAuth(obtenerToken()))
                 .retrieve()
@@ -95,7 +99,7 @@ public class ReservationService {
             Map<String, Object> reservaDto) {
 
         return restClient.post()
-                .uri("http://localhost:8081/api/reservations")
+                .uri(baseUrl + "/api/reservations")
                 .headers(headers ->
                         headers.setBearerAuth(obtenerToken()))
                 .body(reservaDto)
@@ -111,7 +115,7 @@ public class ReservationService {
             Map<String, Object> reservaDto) {
 
         return restClient.put()
-                .uri("http://localhost:8081/api/reservations/" + id)
+                .uri(baseUrl + "/api/reservations/" + id)
                 .headers(headers ->
                         headers.setBearerAuth(obtenerToken()))
                 .body(reservaDto)
@@ -125,7 +129,7 @@ public class ReservationService {
     public void eliminarReservaEnMicroservicio(Long id) {
 
         restClient.delete()
-                .uri("http://localhost:8081/api/reservations/" + id)
+                .uri(baseUrl + "/api/reservations/" + id)
                 .headers(headers ->
                         headers.setBearerAuth(obtenerToken()))
                 .retrieve()

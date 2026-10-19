@@ -1,5 +1,6 @@
 package com.andesstay.ms_andesstay_bff.config;
 
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -9,6 +10,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.client.RestClient;
 
 @Configuration
+@EnableConfigurationProperties(ServicesProperties.class)
 public class RestClientConfig {
 
     @Bean

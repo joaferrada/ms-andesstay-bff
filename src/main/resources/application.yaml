@@ -5,3 +5,16 @@ spring:
         jwt:
           issuer-uri: https://sts.windows.net/524de923-14d5-4e21-bbbf-525ca2e1ced7/
           jwk-set-uri: https://login.microsoftonline.com/524de923-14d5-4e21-bbbf-525ca2e1ced7/discovery/keys
+
+# URLs internas de los microservicios. En Docker usar los nombres de contenedor,
+# ej. RESERVATIONS_URL=http://ms-andesstay-reservations:8081
+andesstay:
+  services:
+    reservations:
+      url: ${RESERVATIONS_URL:http://localhost:8081}
+    catalog:
+      url: ${CATALOG_URL:http://localhost:8085}
+    audit:
+      url: ${AUDIT_URL:http://localhost:8086}
+    report:
+      url: ${REPORT_URL:http://localhost:8087}
