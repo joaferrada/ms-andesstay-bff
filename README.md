@@ -52,7 +52,9 @@ App roles definidos en el App registration de Entra ID (claim `roles`). Se aplic
 | `PUT /api/reservations/{id}/status` | si | si | no | no |
 | `DELETE /api/reservations/{id}` | si | no | no | no |
 
-"Solo las suyas" lo aplica `ms-andesstay-reservations` (una reserva ajena responde 404). Los 4xx del microservicio (400, 403, 404, 409) se devuelven tal cual con su JSON (`exception/MicroserviceErrorHandler`).
+"Solo las suyas" lo aplica `ms-andesstay-reservations` (una reserva ajena responde 404, comparando `huespedEmail` con el principal del token).
+
+El BFF reenvia body y respuesta como `Map<String, Object>` sin transformarlos, asi que los campos del huesped (`huespedNombre`, `huespedEmail`, `creadoPor`) pasan tal cual. Quien decide de donde salen los datos del huesped (token para Cliente, body para Admin/Operador) es el microservicio. Los 4xx del microservicio (400, 403, 404, 409) se devuelven tal cual con su JSON (`exception/MicroserviceErrorHandler`).
 
 ## Tests
 
